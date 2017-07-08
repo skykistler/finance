@@ -1,3 +1,4 @@
+~%2Fgit%2Ffinance%2F.gitignore="A8892DC6"
 ~%2Fgit%2Ffinance%2Fadjusting%20trend%20strategy.R="24C8CC81"
 ~%2Fgit%2Ffinance%2Fadjusting%20yesterday%20strategy.R="A8B67B52"
 ~%2Fgit%2Ffinance%2Fcounter%20trends%20RSI.R="8C4C6C1F"
@@ -8,5 +9,6 @@
 ~%2Fgit%2Ffinance%2Flibraries.R="CEEF01F6"
 ~%2Fgit%2Ffinance%2Fmain.R="30DD9D78"
 ~%2Fgit%2Ffinance%2Fmu%20train.R="DC0E8AB6"
+~%2Fgit%2Ffinance%2Fmu%2Fmu%20train.R="C621AE4B"
 ~%2Fgit%2Ffinance%2Fmu.R="9F38C4B8"
 ~%2Fgit%2Ffinance%2Fsma.R="D5A68AFE"

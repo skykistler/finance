@@ -6,8 +6,12 @@ getSymbols('MU', src='yahoo', from="2004-01-01", to="2017-07-08")
 
 #####################################################
 
-MU.daily <- data.frame(MU$MU.Adjusted, MU$MU.Volume)
-colnames(MU.daily) <- c('price', 'volume')
+MU.daily <- data.frame(MU$MU.Adjusted, MU$MU.Volume, MU %>% as.data.frame() %>% rownames)
+colnames(MU.daily) <- c('price', 'volume', 'date')
+
+MU.daily %<>% rbind(
+  data.frame(price=NA, volume=NA, date='2017-07-10')
+)
 
 MU.daily %<>%
   mutate(
@@ -25,13 +29,13 @@ MU.daily %<>%
     evwma.50.lag.5 = lag(evwma.50.diff, n=5)
   )
 
-characteristics <- colnames(MU.daily)[-(2:1)]
+characteristics <- colnames(MU.daily)[-(5:1)]
 
 MU.daily %<>% filter(!is.na(evwma.50.lag.5))
 
 #####################################################
 
-training.subset <- 1:(nrow(MU.daily) - 50)
+training.subset <- 1:(nrow(MU.daily) - 200)
 
 MU.daily.train <- MU.daily[training.subset, ]
 MU.daily.test  <- MU.daily[-training.subset, ]
@@ -41,31 +45,38 @@ MU.daily.test  <- MU.daily[-training.subset, ]
 MU.daily.train.h2o <- as.h2o(MU.daily.train)
 MU.daily.test.h2o  <- as.h2o(MU.daily.test)
 
-# MU.gbm <-
-#   h2o.gbm(
-#     'price', 
-#     characteristics,
-#     MU.daily.train.h2o,
-#     'MU.gbm',
-#     ntrees=50,
-#     max_depth=5,
-#     min_rows=2,
-#     learn_rate=0.2,
-#     learn_rate_annealing = .99,
-#     score_tree_interval = 5,
-#     stopping_tolerance = .001,
-#     stopping_rounds=5
-#   )
-
-predictions <- h2o.predict(
-  h2o.getModel('MU.daily.dnn'), 
-  MU.daily.test.h2o
+MU.daily.dnn <-
+  h2o.deeplearning(
+    x=characteristics,
+    y='price',
+    training_frame = MU.daily.train.h2o,
+    validation_frame = MU.daily.test.h2o,
+    model_id = 'MU.daily.dnn',
+    nfolds=3,
+    activation = "RectifierWithDropout",
+    hidden=c(200,200,200),
+    epochs=15,
+    seed=-1
   )
 
-MU.daily.test$prediction <- predictions$predict 
-MU.daily.test$prediction %>% length
+MU.daily.test$prediction <- h2o.predict(
+  h2o.getModel('MU.daily.dnn'),
+  MU.daily.test.h2o
+  ) %>% as.vector('numeric')
 
-# plot(MU.daily.test$price, MU.daily.test$prediction)
+
+ggplot(MU.daily.test, aes(x=MU.daily.test$date%>%as.numeric)) +                    
+  geom_line(aes(y=MU.daily.test$prediction), colour="red") +  
+  geom_line(aes(y=MU.daily.test$price), colour="green") 
+
+
+
+
+
+
+
+
+
 
 
 
