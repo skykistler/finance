@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "source('libraries.R')\n\nh2o.init(nthreads=2)\n\ngetSymbols('MU', src='yahoo', from=\"2004-01-01\", to=\"2017-07-08\")\n\n#####################################################\n\nMU.daily <- data.frame(MU$MU.Adjusted, MU$MU.Volume)\ncolnames(MU.daily) <- c('price', 'volume')\n\nMU.daily %<>%\n  mutate(\n    volume.lag    = lag(volume),\n    price.lag     = lag(price),\n    ema.20        = EMA(price.lag, n=20),\n    ema.20.diff   = price.lag - ema.20,\n    ema.50        = EMA(price.lag),\n    ema.50.diff   = price.lag - ema.50,\n    evwma.50      = EVWMA(price.lag, volume.lag, n=50),\n    evwma.50.diff = volume.lag - evwma.50,\n    \n    ema.20.lag.5   = lag(ema.20.diff, n=5),\n    ema.50.lag.5   = lag(ema.50.diff, n=5),\n    evwma.50.lag.5 = lag(evwma.50.diff, n=5)\n  )\n\ncharacteristics <- colnames(MU.daily)[-(2:1)]\n\nMU.daily %<>% filter(!is.na(evwma.50.lag.5))\n\n#####################################################\n\ntraining.subset <- 1:(nrow(MU.daily) - 50)\n\nMU.daily.train <- MU.daily[training.subset, ]\nMU.daily.test  <- MU.daily[-training.subset, ]\n\n#####################################################\n\nMU.daily.train.h2o <- as.h2o(MU.daily.train)\nMU.daily.test.h2o  <- as.h2o(MU.daily.test)\n\n# MU.gbm <-\n#   h2o.gbm(\n#     'price', \n#     characteristics,\n#     MU.daily.train.h2o,\n#     'MU.gbm',\n#     ntrees=50,\n#     max_depth=5,\n#     min_rows=2,\n#     learn_rate=0.2,\n#     learn_rate_annealing = .99,\n#     score_tree_interval = 5,\n#     stopping_tolerance = .001,\n#     stopping_rounds=5\n#   )\n\npredictions <- h2o.predict(\n  h2o.getModel('MU.daily.dnn'), \n  MU.daily.test.h2o\n  )\n\nMU.daily.test$prediction <- predictions$predict \nMU.daily.test$prediction %>% length\n\n# plot(MU.daily.test$price, MU.daily.test$prediction)\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+    "created" : 1499477795289.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1990494165",
+    "id" : "CD5DD67F",
+    "lastKnownWriteTime" : 1499483060,
+    "last_content_update" : 1499483060874,
+    "path" : "~/git/finance/mu train.R",
+    "project_path" : "mu train.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 8,
+    "source_on_save" : true,
+    "source_window" : "",
+    "type" : "r_source"
+}

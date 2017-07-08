@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1499479370068.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "8D4A615",
+    "lastKnownWriteTime" : 4294967296,
+    "last_content_update" : 1499479370068,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "927F4B2D",
+        "caption" : "MU.daily",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=MU.daily&cache_key=927F4B2D",
+        "displayedObservations" : "3347",
+        "environment" : "",
+        "object" : "MU.daily",
+        "preview" : "0",
+        "totalObservations" : "3347",
+        "variables" : "13"
+    },
+    "relative_order" : 10,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

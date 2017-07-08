@@ -1,0 +1,9 @@
+{
+    "path" : "~/git/finance",
+    "sortOrder" : [
+        {
+            "ascending" : true,
+            "columnIndex" : 2
+        }
+    ]
+}

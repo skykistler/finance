@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "#### Install and load required libraries ####\n\n.requiredLibraries <- c(\n  'dplyr',\n  'magrittr',\n  'quantmod',\n  'binhf',\n  'h2o'\n)\n\n####################################################################\n## All libraries will be installed if needed\n\n.requireLib <- function(package) {\n  if (!require(package, character.only=T)) {\n    install.packages(package)\n    return(require(package, character.only=T))\n  }\n  \n  return(TRUE)\n}\n\nlapply(.requiredLibraries, .requireLib)",
+    "created" : 1491776244924.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "298405332",
+    "id" : "93B37133",
+    "lastKnownWriteTime" : 1499480006,
+    "last_content_update" : 1499480006367,
+    "path" : "~/git/finance/libraries.R",
+    "project_path" : "libraries.R",
+    "properties" : {
+        "notebook_format" : "pdf_document",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : true,
+    "source_window" : "",
+    "type" : "r_source"
+}
