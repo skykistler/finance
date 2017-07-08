@@ -35,7 +35,7 @@ MU.daily %<>% filter(!is.na(evwma.50.lag.5))
 
 #####################################################
 
-training.subset <- 1:(nrow(MU.daily) - 200)
+training.subset <- 1:(nrow(MU.daily) - 10)
 
 MU.daily.train <- MU.daily[training.subset, ]
 MU.daily.test  <- MU.daily[-training.subset, ]
@@ -66,8 +66,9 @@ MU.daily.test$prediction <- h2o.predict(
 
 
 ggplot(MU.daily.test, aes(x=MU.daily.test$date%>%as.numeric)) +                    
-  geom_line(aes(y=MU.daily.test$prediction), colour="red") +  
-  geom_line(aes(y=MU.daily.test$price), colour="green") 
+  geom_line(aes(y=MU.daily.test$prediction + 1.7), colour="red") +  
+  geom_line(aes(y=MU.daily.test$price), colour="green") +
+  scale_y_sqrt()
 
 
 
