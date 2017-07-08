@@ -2,18 +2,18 @@ source('libraries.R')
 
 h2o.init(nthreads=2)
 
-getSymbols('MU', src='yahoo', from="2004-01-01", to="2017-07-08")
+getSymbols('UAL', src='yahoo', from="2004-01-01", to="2017-07-08")
 
 #####################################################
 
-MU.daily <- data.frame(MU$MU.Adjusted, MU$MU.Volume, MU %>% as.data.frame() %>% rownames)
-colnames(MU.daily) <- c('price', 'volume', 'date')
+UAL.daily <- data.frame(UAL$UAL.Adjusted, UAL$UAL.Volume, UAL %>% as.data.frame() %>% rownames)
+colnames(UAL.daily) <- c('price', 'volume', 'date')
 
-MU.daily %<>% rbind(
+UAL.daily %<>% rbind(
   data.frame(price=NA, volume=NA, date='2017-07-10')
 )
 
-MU.daily %<>%
+UAL.daily %<>%
   mutate(
     # These are not trained on, see line 'characteristics <- ...'
     volume.lag    = lag(volume),
@@ -35,29 +35,29 @@ MU.daily %<>%
     evwma.50.lag.5 = lag(evwma.50.diff, n=5)
   )
 
-characteristics <- colnames(MU.daily)[-(6:1)]
+characteristics <- colnames(UAL.daily)[-(6:1)]
 
-MU.daily %<>% filter(!is.na(evwma.50.lag.5))
-
-#####################################################
-
-training.subset <- 1:(nrow(MU.daily) - 200)
-
-MU.daily.train <- MU.daily[training.subset, ]
-MU.daily.test  <- MU.daily[-training.subset, ]
+UAL.daily %<>% filter(!is.na(evwma.50.lag.5))
 
 #####################################################
 
-MU.daily.train.h2o <- as.h2o(MU.daily.train)
-MU.daily.test.h2o  <- as.h2o(MU.daily.test)
+training.subset <- 1:(nrow(UAL.daily) - 2100)
 
-MU.daily.dnn <-
+UAL.daily.train <- UAL.daily[training.subset, ]
+UAL.daily.test  <- UAL.daily[-training.subset, ]
+
+#####################################################
+
+UAL.daily.train.h2o <- as.h2o(UAL.daily.train)
+UAL.daily.test.h2o  <- as.h2o(UAL.daily.test)
+
+UAL.daily.dnn <-
   h2o.deeplearning(
     x=characteristics,
     y='price',
-    training_frame = MU.daily.train.h2o,
-    validation_frame = MU.daily.test.h2o,
-    model_id = 'MU.daily.dnn',
+    training_frame = UAL.daily.train.h2o,
+    validation_frame = UAL.daily.test.h2o,
+    model_id = 'UAL.daily.dnn',
     nfolds=3,
     activation = "RectifierWithDropout",
     hidden=c(200,200,200),
@@ -65,15 +65,15 @@ MU.daily.dnn <-
     seed=-1
   )
 
-MU.daily.test$prediction <- h2o.predict(
-  h2o.getModel('MU.daily.dnn'),
-  MU.daily.test.h2o
-  ) %>% as.vector('numeric')
+UAL.daily.test$prediction <- h2o.predict(
+  h2o.getModel('UAL.daily.dnn'),
+  UAL.daily.test.h2o
+) %>% as.vector('numeric')
 
 
-ggplot(MU.daily.test, aes(x=MU.daily.test$date%>%as.numeric)) +                    
-  geom_line(aes(y=MU.daily.test$prediction), colour="red") +  
-  geom_line(aes(y=MU.daily.test$price), colour="green") +
+ggplot(UAL.daily.test, aes(x=UAL.daily.test$date%>%as.numeric)) +                    
+  geom_line(aes(y=UAL.daily.test$prediction), colour="red") +  
+  geom_line(aes(y=UAL.daily.test$price), colour="green") +
   scale_y_sqrt()
 
 
