@@ -41,7 +41,7 @@ MU.daily %<>% filter(!is.na(evwma.50.lag.5))
 
 #####################################################
 
-training.subset <- 1:(nrow(MU.daily) - 200)
+training.subset <- 1:(nrow(MU.daily) - 2400)
 
 MU.daily.train <- MU.daily[training.subset, ]
 MU.daily.test  <- MU.daily[-training.subset, ]
