@@ -15,8 +15,13 @@ CBOE.daily %<>% rbind(
 
 CBOE.daily %<>%
   mutate(
+    # These are not trained on, see line 'characteristics <- ...'
     volume.lag    = lag(volume),
     price.lag     = lag(price),
+    percent.change= price / (price.lag - 1) - 1,
+    
+    # These are base moving stats, using yesterday's price
+    percent.change.lag = price.lag / (lag(price,2)) - 1,
     ema.20        = EMA(price.lag, n=20),
     ema.20.diff   = price.lag - ema.20,
     ema.50        = EMA(price.lag),
@@ -24,6 +29,7 @@ CBOE.daily %<>%
     evwma.50      = EVWMA(price.lag, volume.lag, n=50),
     evwma.50.diff = volume.lag - evwma.50,
     
+    # These are the above moving stats from 5 days ago
     ema.20.lag.5   = lag(ema.20.diff, n=5),
     ema.50.lag.5   = lag(ema.50.diff, n=5),
     evwma.50.lag.5 = lag(evwma.50.diff, n=5)
