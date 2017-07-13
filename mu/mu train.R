@@ -11,13 +11,13 @@ colnames(MU.daily) <- c('price', 'volume', 'date')
 MU.daily$date %<>% as.Date()
 
 
-MU.daily %<>% rbind(
-  data.frame(price=31.48, volume=1.7e7, date='2017-07-13')
-)
+# MU.daily %<>% rbind(
+#   data.frame(price=31.63, volume=1.7e7, date='2017-07-13')
+# )
 
 
 MU.daily %<>% rbind(
-  data.frame(price=NA, volume=NA, date='2017-07-14')
+  data.frame(price=NA, volume=NA, date='2017-07-13')
 )
 
 MU.daily %<>%
@@ -36,6 +36,26 @@ MU.daily %<>%
     evwma.50      = EVWMA(price.lag, volume.lag, n=50),
     evwma.50.diff = volume.lag - evwma.50,
     
+    # These are the above moving stats from 1 day ago
+    ema.20.lag.1   = lag(ema.20.diff, n=1),
+    ema.50.lag.1   = lag(ema.50.diff, n=1),
+    evwma.50.lag.1 = lag(evwma.50.diff, n=1),
+    
+    # These are the above moving stats from 2 days ago
+    ema.20.lag.2   = lag(ema.20.diff, n=2),
+    ema.50.lag.2   = lag(ema.50.diff, n=2),
+    evwma.50.lag.2 = lag(evwma.50.diff, n=2),
+    
+    # These are the above moving stats from 3 days ago
+    ema.20.lag.3   = lag(ema.20.diff, n=3),
+    ema.50.lag.3   = lag(ema.50.diff, n=3),
+    evwma.50.lag.3 = lag(evwma.50.diff, n=3),
+    
+    # These are the above moving stats from 4 days ago
+    ema.20.lag.4   = lag(ema.20.diff, n=4),
+    ema.50.lag.4   = lag(ema.50.diff, n=4),
+    evwma.50.lag.4 = lag(evwma.50.diff, n=4),
+    
     # These are the above moving stats from 5 days ago
     ema.20.lag.5   = lag(ema.20.diff, n=5),
     ema.50.lag.5   = lag(ema.50.diff, n=5),
@@ -48,7 +68,7 @@ MU.daily %<>% filter(!is.na(evwma.50.lag.5))
 
 #####################################################
 
-training.subset <- 1:(nrow(MU.daily) - 10)
+training.subset <- 1:(nrow(MU.daily) - 20)
 
 MU.daily.train <- MU.daily[training.subset, ]
 MU.daily.test  <- MU.daily[-training.subset, ]
