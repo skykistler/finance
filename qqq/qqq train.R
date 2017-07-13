@@ -2,26 +2,31 @@ source('libraries.R')
 
 h2o.init(nthreads=4)
 
-# getSymbols('CBOE', src='yahoo', from="2004-01-01", to="2017-07-13")
+getSymbols('QQQ', src='yahoo', from="2004-01-01", to="2017-07-12")
 
 #####################################################
 
-CBOE.daily <- data.frame(CBOE$CBOE.Adjusted, CBOE$CBOE.Volume, CBOE %>% as.data.frame() %>% rownames)
-colnames(CBOE.daily) <- c('price', 'volume', 'date')
+QQQ.daily <- data.frame(QQQ$QQQ.Adjusted, QQQ$QQQ.Volume, QQQ %>% as.data.frame() %>% rownames)
+colnames(QQQ.daily) <- c('price', 'volume', 'date')
 
-CBOE.daily$date %<>% as.Date()
+QQQ.daily$date %<>% as.Date()
 
 
-CBOE.daily %<>% rbind(
-  data.frame(price=92.27, volume=6.7e5, date='2017-07-13')
+# QQQ.daily %<>% rbind(
+#   data.frame(price=138.6, volume=2.48e7, date='2017-07-10')
+# )
+
+
+# QQQ.daily %<>% rbind(
+#   data.frame(price=30.47, volume=3.0e7, date='2017-07-12')
+# )
+
+
+QQQ.daily %<>% rbind(
+  data.frame(price=NA, volume=NA, date='2017-07-12')
 )
 
-
-CBOE.daily %<>% rbind(
-  data.frame(price=NA, volume=NA, date='2017-07-14')
-)
-
-CBOE.daily %<>%
+QQQ.daily %<>%
   mutate(
     # These are not trained on, see line 'characteristics <- ...'
     volume.lag    = lag(volume),
@@ -48,28 +53,29 @@ CBOE.daily %<>%
     evwma.50.lag.5 = lag(evwma.50.diff, n=5)
   )
 
-characteristics <- colnames(CBOE.daily)[-(4:1)]
+characteristics <- colnames(QQQ.daily)[-(4:1)]
 
-CBOE.daily %<>% filter(!is.na(evwma.50.lag.5))
-
-#####################################################
-
-training.subset <- 1:(nrow(CBOE.daily) - 10)
-
-CBOE.daily.train <- CBOE.daily[training.subset, ]
-CBOE.daily.test  <- CBOE.daily[-training.subset, ]
+QQQ.daily %<>% filter(!is.na(evwma.50.lag.5))
 
 #####################################################
 
-CBOE.daily.train.h2o <- as.h2o(CBOE.daily.train)
-CBOE.daily.test.h2o  <- as.h2o(CBOE.daily.test)
+training.subset <- 1:(nrow(QQQ.daily) - 30)
 
-CBOE.daily.dnn <-
+QQQ.daily.train <- QQQ.daily[training.subset, ]
+QQQ.daily.test  <- QQQ.daily[-training.subset, ]
+
+#####################################################
+
+QQQ.daily.train.h2o <- as.h2o(QQQ.daily.train)
+QQQ.daily.test.h2o  <- as.h2o(QQQ.daily.test)
+
+QQQ.daily.dnn <-
   h2o.deeplearning(
     x=characteristics,
     y='price',
-    training_frame = CBOE.daily.train.h2o,
-    model_id = 'CBOE.daily.dnn',
+    training_frame = QQQ.daily.train.h2o,
+    validation_frame = QQQ.daily.test.h2o,
+    model_id = 'QQQ.daily.dnn',
     nfolds=7,
     activation = "RectifierWithDropout",
     hidden=c(200,200,200),
@@ -77,9 +83,9 @@ CBOE.daily.dnn <-
     seed=-1
   )
 
-CBOE.daily.test$prediction <- h2o.predict(
-  h2o.getModel('CBOE.daily.dnn'),
-  CBOE.daily.test.h2o
+QQQ.daily.test$prediction <- h2o.predict(
+  h2o.getModel('QQQ.daily.dnn'),
+  QQQ.daily.test.h2o
 ) %>% as.vector('numeric')
 
 
@@ -87,15 +93,15 @@ CBOE.daily.test$prediction <- h2o.predict(
 ##################################################################### 
 
 
-offset <- CBOE.daily.test[1,]$price / CBOE.daily.test[1,]$prediction
+offset <- QQQ.daily.test[1,]$price / QQQ.daily.test[1,]$prediction
 
-ggplot(CBOE.daily.test, aes(x=CBOE.daily.test$date)) +                    
-  geom_line(aes(y=CBOE.daily.test$prediction * offset), colour="red", size=1) +  
-  geom_line(aes(y=CBOE.daily.test$price), colour="green", size=1) +
+ggplot(QQQ.daily.test, aes(x=QQQ.daily.test$date)) +                    
+  geom_line(aes(y=QQQ.daily.test$prediction * offset), colour="red", size=1) +  
+  geom_line(aes(y=QQQ.daily.test$price), colour="green", size=1) +
   scale_x_date(
     minor_breaks = seq(
-      from = min(CBOE.daily.test$date), 
-      to   = max(CBOE.daily.test$date),
+      from = min(QQQ.daily.test$date), 
+      to   = max(QQQ.daily.test$date),
       by   = "1 day"
     ),
     date_breaks = "5 days"
