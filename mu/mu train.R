@@ -1,27 +1,23 @@
 source('libraries.R')
 
-h2o.init(nthreads=4)
+h2o.init(nthreads=3)
 
-getSymbols('MU', src='yahoo', from="2004-01-01", to="2017-07-11")
+# getSymbols('MU', src='yahoo', from="2004-01-01", to="2017-07-13")
 
 #####################################################
 
 MU.daily <- data.frame(MU$MU.Adjusted, MU$MU.Volume, MU %>% as.data.frame() %>% rownames)
 colnames(MU.daily) <- c('price', 'volume', 'date')
+MU.daily$date %<>% as.Date()
 
 
 MU.daily %<>% rbind(
-  data.frame(price=31.08, volume=2.1e7, date='2017-07-11')
+  data.frame(price=31.48, volume=1.7e7, date='2017-07-13')
 )
 
- 
-# MU.daily %<>% rbind(
-#   data.frame(price=30.47, volume=3.0e7, date='2017-07-12')
-# )
-
 
 MU.daily %<>% rbind(
-  data.frame(price=NA, volume=NA, date='2017-07-12')
+  data.frame(price=NA, volume=NA, date='2017-07-14')
 )
 
 MU.daily %<>%
@@ -67,11 +63,10 @@ MU.daily.dnn <-
     x=characteristics,
     y='price',
     training_frame = MU.daily.train.h2o,
-    validation_frame = MU.daily.test.h2o,
     model_id = 'MU.daily.dnn',
     nfolds=3,
     activation = "RectifierWithDropout",
-    hidden=c(200,200,200),
+    hidden=c(200,200,200,200),
     epochs=15,
     seed=-1
   )
@@ -82,12 +77,24 @@ MU.daily.test$prediction <- h2o.predict(
   ) %>% as.vector('numeric')
 
 
-ggplot(MU.daily.test, aes(x=MU.daily.test$date%>%as.numeric)) +                    
-  geom_line(aes(y=MU.daily.test$prediction), colour="red") +  
-  geom_line(aes(y=MU.daily.test$price), colour="green") +
+##################################################################### 
+
+
+offset <- MU.daily.test[1,]$price / MU.daily.test[1,]$prediction
+
+ggplot(MU.daily.test, aes(x=MU.daily.test$date)) +                    
+  geom_line(aes(y=MU.daily.test$prediction * offset), colour="red", size=1) +  
+  geom_line(aes(y=MU.daily.test$price), colour="green", size=1) +
+  scale_x_date(
+    minor_breaks = seq(
+      from = min(MU.daily.test$date), 
+      to   = max(MU.daily.test$date),
+      by   = "1 day"
+    ),
+    date_breaks = "5 days"
+  ) +
   scale_y_sqrt() %>% 
   print
-
 
 
 
