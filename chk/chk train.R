@@ -2,24 +2,21 @@ source('libraries.R')
 
 h2o.init(nthreads=4)
 
-# getSymbols('CBOE', src='yahoo', from="2000-02-29", to="2017-07-14")
+getSymbols('CHK', src='yahoo', from="2016-02-29", to="2017-07-14")
 
 #####################################################
 
-CBOE.daily <- data.frame(CBOE$CBOE.Adjusted, CBOE$CBOE.Volume, CBOE %>% as.data.frame() %>% rownames)
-colnames(CBOE.daily) <- c('price', 'volume', 'date')
-CBOE.daily$date %<>% as.Date()
+CHK.daily <- data.frame(CHK$CHK.Adjusted, CHK$CHK.Volume, CHK %>% as.data.frame() %>% rownames)
+colnames(CHK.daily) <- c('price', 'volume', 'date')
+CHK.daily$date %<>% as.Date()
 
-# CBOE.daily %<>% rbind(
-#   data.frame(price=92.14, volume=6e5, date='2017-07-14')
-# )
 
-CBOE.daily %<>% rbind(
+CHK.daily %<>% rbind(
   data.frame(price=NA, volume=NA, date='2017-07-14')
 )
 
 
-CBOE.daily %<>%
+CHK.daily %<>%
   mutate(
     # These are not trained on, see line 'characteristics <- ...'
     volume.lag    = lag(volume),
@@ -46,28 +43,28 @@ CBOE.daily %<>%
     evwma.50.lag.5 = lag(evwma.50.diff, n=5)
   )
 
-characteristics <- colnames(CBOE.daily)[-(3:1)]
+characteristics <- colnames(CHK.daily)[-(3:1)]
 
-CBOE.daily %<>% filter(!is.na(evwma.50.lag.5))
-
-#####################################################
-
-training.subset <- 1:(nrow(CBOE.daily) - 20)
-
-CBOE.daily.train <- CBOE.daily[training.subset, ]
-CBOE.daily.test  <- CBOE.daily[-training.subset, ]
+CHK.daily %<>% filter(!is.na(evwma.50.lag.5))
 
 #####################################################
 
-CBOE.daily.train.h2o <- as.h2o(CBOE.daily.train)
-CBOE.daily.test.h2o  <- as.h2o(CBOE.daily.test)
+training.subset <- 1:(nrow(CHK.daily) - 200)
 
-CBOE.daily.dnn <-
+CHK.daily.train <- CHK.daily[training.subset, ]
+CHK.daily.test  <- CHK.daily[-training.subset, ]
+
+#####################################################
+
+CHK.daily.train.h2o <- as.h2o(CHK.daily.train)
+CHK.daily.test.h2o  <- as.h2o(CHK.daily.test)
+
+CHK.daily.dnn <-
   h2o.deeplearning(
     x=characteristics,
     y='price',
-    training_frame = CBOE.daily.train.h2o,
-    model_id = 'CBOE.daily.dnn',
+    training_frame = CHK.daily.train.h2o,
+    model_id = 'CHK.daily.dnn',
     nfolds=20,
     activation = "RectifierWithDropout",
     hidden=c(200, 100, 20, 5, 50, 150),
@@ -75,9 +72,9 @@ CBOE.daily.dnn <-
     seed=1
   )
 
-CBOE.daily.test$prediction <- h2o.predict(
-  h2o.getModel('CBOE.daily.dnn'),
-  CBOE.daily.test.h2o
+CHK.daily.test$prediction <- h2o.predict(
+  h2o.getModel('CHK.daily.dnn'),
+  CHK.daily.test.h2o
 ) %>% as.vector('numeric')
 
 
@@ -85,15 +82,15 @@ CBOE.daily.test$prediction <- h2o.predict(
 ##################################################################### 
 
 
-offset <- CBOE.daily.test[1,]$price / CBOE.daily.test[1,]$prediction
+offset <- CHK.daily.test[1,]$price / CHK.daily.test[1,]$prediction
 
-ggplot(CBOE.daily.test, aes(x=CBOE.daily.test$date)) +                    
-  geom_line(aes(y=CBOE.daily.test$prediction * offset), colour="red", size=1) +  
-  geom_line(aes(y=CBOE.daily.test$price), colour="green", size=1) +
+ggplot(CHK.daily.test, aes(x=CHK.daily.test$date)) +                    
+  geom_line(aes(y=CHK.daily.test$prediction * offset), colour="red", size=1) +  
+  geom_line(aes(y=CHK.daily.test$price), colour="green", size=1) +
   scale_x_date(
     minor_breaks = seq(
-      from = min(CBOE.daily.test$date), 
-      to   = max(CBOE.daily.test$date),
+      from = min(CHK.daily.test$date), 
+      to   = max(CHK.daily.test$date),
       by   = "1 day"
     ),
     date_breaks = "5 days"
