@@ -34,10 +34,25 @@ MU.daily %<>%
     evwma.50      = EVWMA(price.lag, volume.lag, n=50),
     evwma.50.diff = volume.lag - evwma.50,
     
+    # These are the above moving stats from 1 day ago
+    ema.20.lag.1   = lag(ema.20.diff, n=1),
+    ema.50.lag.1   = lag(ema.50.diff, n=1),
+    evwma.50.lag.1 = lag(evwma.50.diff, n=1),
+    
     # These are the above moving stats from 2 days ago
     ema.20.lag.2   = lag(ema.20.diff, n=2),
     ema.50.lag.2   = lag(ema.50.diff, n=2),
     evwma.50.lag.2 = lag(evwma.50.diff, n=2),
+    
+    # These are the above moving stats from 3 days ago
+    ema.20.lag.3   = lag(ema.20.diff, n=3),
+    ema.50.lag.3   = lag(ema.50.diff, n=3),
+    evwma.50.lag.3 = lag(evwma.50.diff, n=3),
+    
+    # These are the above moving stats from 4 days ago
+    ema.20.lag.4   = lag(ema.20.diff, n=4),
+    ema.50.lag.4   = lag(ema.50.diff, n=4),
+    evwma.50.lag.4 = lag(evwma.50.diff, n=4),
     
     # These are the above moving stats from 5 days ago
     ema.20.lag.5   = lag(ema.20.diff, n=5),
@@ -109,14 +124,6 @@ print(paste('True ups (both went up):', MU.daily.test %>% filter(prediction > la
 
 print(paste('False downs (actually went up):', MU.daily.test %>% filter(prediction < lag(prediction), price > price.lag) %>% nrow)) 
 print(paste('False ups (actually went down):', MU.daily.test %>% filter(prediction > lag(prediction), price < price.lag) %>% nrow)) 
-
-
-
-
-
-
-
-
 
 
 
