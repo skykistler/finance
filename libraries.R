@@ -6,8 +6,18 @@
   'quantmod',
   'binhf',
   'h2o',
-  'ggplot2'
+  'ggplot2',
+  'plotly',
+  'TTR',
+  'PerformanceAnalytics',
+  'FinancialInstrument',
+  'tseries',
+  'roll',
+  'pracma'
 )
+
+install.packages("packages/blotter_0.9.1741.zip", repos="NULL", type="source")
+install.packages("packages/quantstrat_0.9.1739.zip", repos="NULL", type="source")
 
 ####################################################################
 ## All libraries will be installed if needed

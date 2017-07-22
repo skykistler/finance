@@ -2,9 +2,9 @@ source('libraries.R')
 
 h2o.init(nthreads=4)
 
-pred.date <- '2017-07-21'
+pred.date <- '2017-07-24'
 
-getSymbols('MU', src='yahoo', from="2004-01-01", to=pred.date)
+getSymbols('MU', src='yahoo', from="2013-05-27", to=pred.date)
 
 #####################################################
 
@@ -20,18 +20,26 @@ MU.daily %<>% rbind(
 
 MU.daily %<>%
   mutate(
-    # These are not trained on, see line 'characteristics <- ...'
-    volume.lag    = lag(volume),
+    # This is not trained on, see line 'characteristics <- ...'
+    percent.change= price / (lag(price) - 1) - 1,
+    
+    # Quick descriptions of price
     price.lag     = lag(price),
-    percent.change= price / (price.lag - 1) - 1,
+    price.lag.2   = lag(price, n=2),
+    price.lag.3   = lag(price, n=3),
+    price.lag.4   = lag(price, n=4),
+    price.lag.5   = lag(price, n=5),
+    
+    # Volume is pretty noisy ;O
+    volume.lag    = lag(volume),
     
     # These are base moving stats, using yesterday's price
     percent.change.lag = price.lag / (lag(price,2)) - 1,
-    ema.20        = EMA(price.lag, n=20),
+    ema.20        = EMA(price.lag, n=3),
     ema.20.diff   = price.lag - ema.20,
-    ema.50        = EMA(price.lag),
+    ema.50        = EMA(price.lag, n=10),
     ema.50.diff   = price.lag - ema.50,
-    evwma.50      = EVWMA(price.lag, volume.lag, n=50),
+    evwma.50      = EVWMA(price.lag, volume.lag, n=10),
     evwma.50.diff = volume.lag - evwma.50,
     
     # These are the above moving stats from 1 day ago
@@ -66,7 +74,7 @@ MU.daily %<>% filter(!is.na(evwma.50.lag.5))
 
 #####################################################
 
-training.subset <- 1:(nrow(MU.daily) - 200)
+training.subset <- 1:(nrow(MU.daily) - 20)
 
 MU.daily.train <- MU.daily[training.subset, ]
 MU.daily.test  <- MU.daily[-training.subset, ]
@@ -74,7 +82,7 @@ MU.daily.test  <- MU.daily[-training.subset, ]
 #####################################################
 
 MU.daily.train.h2o <- as.h2o(MU.daily.train)
-MU.daily.test.h2o  <- as.h2o(MU.daily.test)
+MU.daily.test.h2o  <- as.h2o(MU.daily.test[,characteristics])
 
 MU.daily.dnn <-
   h2o.deeplearning(
@@ -84,8 +92,8 @@ MU.daily.dnn <-
     model_id = 'MU.daily.dnn',
     nfolds=7,
     activation = "RectifierWithDropout",
-    hidden=c(200,200,200),
-    epochs=15,
+    hidden=c(200,200,200,200,200),
+    epochs=14,
     seed=-1
   )
 
@@ -99,33 +107,40 @@ MU.daily.test$prediction <- h2o.predict(
 ##################################################################### 
 
 
-offset <- MU.daily.test[1,]$price / MU.daily.test[1,]$prediction
+plotPredictions <- function() {
+  offset <- 1#MU.daily.test[1,]$price / MU.daily.test[1,]$prediction
+  
+  ggplot(MU.daily.test, aes(x=MU.daily.test$date)) +                    
+    geom_line(aes(y=MU.daily.test$prediction * offset), colour="red", size=1) +  
+    geom_line(aes(y=MU.daily.test$price), colour="green", size=1) +
+    scale_x_date(
+      minor_breaks = seq(
+        from = min(MU.daily.test$date), 
+        to   = max(MU.daily.test$date),
+        by   = "1 day"
+      ),
+      date_breaks = "5 days"
+    ) +
+    scale_y_sqrt() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  ggplotly()
+}
 
-ggplot(MU.daily.test, aes(x=MU.daily.test$date)) +                    
-  geom_line(aes(y=MU.daily.test$prediction * offset), colour="red", size=1) +  
-  geom_line(aes(y=MU.daily.test$price), colour="green", size=1) +
-  scale_x_date(
-    minor_breaks = seq(
-      from = min(MU.daily.test$date), 
-      to   = max(MU.daily.test$date),
-      by   = "1 day"
-    ),
-    date_breaks = "5 days"
-  ) +
-  scale_y_sqrt() %>% 
-  print
-
-
-
-
-
-print(paste('True downs (both went down):', MU.daily.test %>% filter(prediction < lag(prediction), price < price.lag) %>% nrow)) 
-print(paste('True ups (both went up):', MU.daily.test %>% filter(prediction > lag(prediction), price > price.lag) %>% nrow)) 
-
-print(paste('False downs (actually went up):', MU.daily.test %>% filter(prediction < lag(prediction), price > price.lag) %>% nrow)) 
-print(paste('False ups (actually went down):', MU.daily.test %>% filter(prediction > lag(prediction), price < price.lag) %>% nrow)) 
-
-
+plotPredictions()
+  
+printPerformance <- function () {
+  print(paste('True downs (both went down):', MU.daily.test %>% filter(prediction < lag(prediction), price < price.lag) %>% nrow)) 
+  print(paste('True ups (both went up):', MU.daily.test %>% filter(prediction > lag(prediction), price > price.lag) %>% nrow)) 
+  
+  print(paste('False downs (actually went up):', MU.daily.test %>% filter(prediction < lag(prediction), price > price.lag) %>% nrow)) 
+  print(paste('False ups (actually went down):', MU.daily.test %>% filter(prediction > lag(prediction), price < price.lag) %>% nrow)) 
+  
+  MU.daily.test %>% mutate(prediction.lag = lag(prediction)) %>% select(date, prediction.lag, prediction, price.lag, price) %>% View
+}
+  
+  printPerformance()
+  
 
 
 
