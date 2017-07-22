@@ -1,8 +1,8 @@
 ### One time special install for blotter and quantstrat ###
 
-require(devtools)
-install_github("braverock/blotter")
-install_github("braverock/quantstrat")
+# require(devtools)
+# install_github("braverock/blotter")
+# install_github("braverock/quantstrat")
 
 #### Install and load required libraries ####
 
