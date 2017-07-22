@@ -1,3 +1,9 @@
+### One time special install for blotter and quantstrat ###
+
+# require(devtools)
+# install_github("braverock/blotter")
+# install_github("braverock/quantstrat")
+
 #### Install and load required libraries ####
 
 .requiredLibraries <- c(
@@ -13,11 +19,10 @@
   'FinancialInstrument',
   'tseries',
   'roll',
-  'pracma'
+  'pracma',
+  'blotter',
+  'quantstrat'
 )
-
-install.packages("packages/blotter_0.9.1741.zip", repos="NULL", type="source")
-install.packages("packages/quantstrat_0.9.1739.zip", repos="NULL", type="source")
 
 ####################################################################
 ## All libraries will be installed if needed

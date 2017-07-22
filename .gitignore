@@ -3,5 +3,3 @@
 .Rhistory
 .RData
 .Ruserdata
-packages/blotter/*
-packages/quantmod/*
