@@ -3,17 +3,19 @@ source('libraries.R')
 # Configure dates and size of portfolio
 initial.portfolio.date <- '2016-06-30'
 start.date             <- '2016-07-01'
-# initial.portfolio.date <- '2000-06-30'
-# start.date             <- '2000-07-01'
+# initial.portfolio.date <- '2000-06-12'
+# start.date             <- '2000-06-13'
 end.date               <- '2017-07-24'
 initial.equity         <- 10000
-ticker                 <- 'MU'
+order.qty              <- 700
+ticker                 <- 'LFC'
 
 # Apparently timezone needs to be UTC
 Sys.setenv(TZ='UTC')
 
 # Get prices
-symbol <- getSymbols(ticker, from=start.date, to=end.date, index.class='POSIXct', adjust=T, auto.assign = F)
+getSymbols(ticker, from=start.date, to=end.date, index.class='POSIXct', adjust=T, auto.assign = T)
+symbol <- get(ticker)
 colnames(symbol) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
 
 # Set currency and desired instrument
@@ -55,21 +57,21 @@ abline(h=1.5, col=2)
 abline(h=-1.5, col=3)
 
 # Strategy init
-mean3.strat.name <- "MeanStrat3"
-rm.strat(mean3.strat.name)
-mean3.strat <- strategy(name=mean3.strat.name)
+mean3.strat <- "MeanStrat3"
+rm.strat(mean3.strat)
+strategy(name=mean3.strat, store=T)
 
 # Add indicators
-mean3.strat %<>% add.indicator(name="zscore.fun", arguments=list(x=quote(diff(log(Cl(mktdata)), lag=1)), n=24), label='zscore')
+mean3.strat %<>% add.indicator(name="zscore.fun", arguments=list(x=quote(diff(log(Cl(mktdata)), lag=1)), n=10), label='zscore')
 
 # Add signals
-mean3.strat %<>% add.signal(name='sigCrossover', arguments=list(threshold=-1.5, column="zscore", relationship="lt"), label="BuySignal")
-mean3.strat %<>% add.signal(name='sigCrossover', arguments=list(threshold= 1.5, column="zscore", relationship="gt"), label="BuySignal")
+mean3.strat %<>% add.signal(name='sigThreshold', arguments=list(threshold=-1.5, column="zscore", relationship="lt"), label="BuySignal")
+mean3.strat %<>% add.signal(name='sigThreshold', arguments=list(threshold= 1.5, column="zscore", relationship="gt"), label="SellSignal")
 
 # Add Enter rule (with stop loss)
-mean3.strat %<>% add.rule(name='ruleSignal', arguments=list(sigcol="BuySignal", sigval=T, orderqty=10, ordertype='market', orderside='long'), type='enter', label='EnterRule', enabled=T)
-mean3.strat %<>% add.rule(name='ruleSignal', arguments=list(sigcol="BuySignal", sigval=T, orderqty='all', ordertype='stoplimit', threshold=0.05, orderside='long'), type='chain', label='StopLoss', parent='EnterRule', enabled=F)
-mean3.strat %<>% add.rule(name='ruleSignal', arguments=list(sigcol="BuySignal", sigval=T, orderqty='all', ordertype='stoptrailing', threshold=0.07, orderside='long'), type='chain', label='TrailingStop', parent='EnterRule', enabled=F)
+mean3.strat %<>% add.rule(name='ruleSignal', arguments=list(sigcol="BuySignal", sigval=T, orderqty=order.qty, ordertype='market', orderside='long'), type='enter', label='EnterRule', enabled=T)
+mean3.strat %<>% add.rule(name='ruleSignal', arguments=list(sigcol="BuySignal", sigval=T, orderqty='all', ordertype='stoplimit', threshold=.05, orderside='long'), type='chain', label='StopLoss', parent='EnterRule', enabled=T)
+mean3.strat %<>% add.rule(name='ruleSignal', arguments=list(sigcol="BuySignal", sigval=T, orderqty='all', ordertype='stoptrailing', threshold=.07, orderside='long'), type='chain', label='TrailingStop', parent='EnterRule', enabled=T)
 
 # Add Exit rule
 mean3.strat %<>% add.rule(name='ruleSignal', arguments=list(sigcol="SellSignal", sigval=T, orderqty='all', ordertype='market', orderside='long', TxnFees=0), type='exit', label='ExitRule', enabled=T)
@@ -81,7 +83,7 @@ mean3.portf <- "MeanPort3"
 rm.strat(mean3.portf)
 
 initPortf(name = mean3.portf, symbols = ticker, initDate = initial.portfolio.date)
-initAcct(name = mean3.strat, portfolios = mean3.portf, initDate = initial.portfolio.date, initEquity = initial.equity)
+initAcct(name = mean3.strat, portfolios = mean3.portf, initDate = initial.portfolio.date, initEq = initial.equity)
 initOrders(portfolio = mean3.portf, initDate = initial.portfolio.date)
 
 ######################################################
@@ -93,3 +95,28 @@ updatePortf(Portfolio=mean3.portf)
 updateAcct(name=mean3.strat)
 updateEndEq(Account=mean3.strat)
 
+######################################################
+# Evaluate
+
+# Stats
+mean3.stats <- t(tradeStats(Portfolios=mean3.portf))
+View(mean3.stats)
+mean3.perstats <- perTradeStats(Portfolio=mean3.portf)
+View(mean3.perstats)
+
+# Order book
+mean3.book <- getOrderBook(portfolio=mean3.portf)
+# print(mean3.book)
+
+# Chart
+chart.theme <- chart_theme()
+chart.theme$col$dn.col <- 'white'
+chart.theme$col$dn.border <- 'lightgray'
+chart.theme$col$up.border <- 'lightgray'
+chart.Posn(Portfolio=mean3.portf, Symbol=ticker, theme=chart.theme)
+add_BBands(n=20,sd=2)
+
+# Equity curve
+mean3.acct <- getAccount(Account=mean3.strat)
+mean3.equity <- mean3.acct$summary$End.Eq
+plot(mean3.equity, main="Mean3 Strategy Equity Curve") %>% print
