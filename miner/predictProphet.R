@@ -92,5 +92,12 @@ predictProphet <- function(symbol, from.date='2014-01-01', to.date=Sys.Date(), f
   #### Make and plot predictions ####
   future <- make_future_dataframe(symbol.prophet, periods = future.days)
   forecast <- predict(symbol.prophet, future)
+  
   plot(symbol.prophet, forecast) %>% print
+  forecast %>% 
+    select(
+      date = ds,
+      price = yhat
+    ) %>%
+    View
 }
