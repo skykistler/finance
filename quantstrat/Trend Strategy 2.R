@@ -3,10 +3,10 @@ source('libraries.R')
 # Configure dates and size of portfolio
 initial.portfolio.date <- '2016-06-30'
 start.date             <- '2016-07-01'
-end.date               <- '2017-07-24'
+end.date               <- '2017-07-27'
 initial.equity         <- 10000
-order.qty              <- 'all'
-ticker                 <- 'TSLA'
+order.qty              <- 350
+ticker                 <- 'MU'
 
 # Apparently timezone needs to be UTC
 Sys.setenv(TZ='UTC')
@@ -34,7 +34,7 @@ rm.strat(trend2.strat)
 strategy(name=trend2.strat, store=T)
 
 # Add indicators
-trend2.strat %<>% add.indicator(name="MACD", arguments=list(x=quote(Cl(mktdata)), nFast=12,nSlow=26,nSig=9), label="MACD")
+trend2.strat %<>% add.indicator(name="MACD", arguments=list(x=quote(Cl(mktdata)), nFast=5,nSlow=20,nSig=9), label="MACD")
 
 # Add signals
 trend2.strat %<>% add.signal(name='sigCrossover', arguments=list(columns=c("macd", "signal"), relationship="gt"), label="BuySignal")
@@ -75,7 +75,7 @@ updateEndEq(Account=trend2.strat)
 trend2.stats <- t(tradeStats(Portfolios=trend2.portf))
 View(trend2.stats)
 trend2.perstats <- perTradeStats(Portfolio=trend2.portf)
-# View(trend2.perstats)
+View(trend2.perstats)
 
 # Order book
 trend2.book <- getOrderBook(portfolio=trend2.portf)

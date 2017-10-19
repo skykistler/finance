@@ -1,11 +1,11 @@
 source('libraries.R')
 
 # Configure dates and size of portfolio
-initial.portfolio.date <- '2016-06-30'
-start.date             <- '2016-07-01'
-end.date               <- '2017-07-31'
+initial.portfolio.date <- '2015-06-30'
+start.date             <- '2015-07-01'
+end.date               <- '2017-08-05'
 initial.equity         <- 10000
-order.qty              <- 100
+order.qty              <- 350
 ticker                 <- 'MU'
 
 # Apparently timezone needs to be UTC
@@ -24,9 +24,12 @@ stock(primary_id=ticker, currency='USD', multiplier=1)
 # Strategy 
 
 # EDA
-lineChart(symbol)
+barChart(symbol)
 addSMA(n=5, col='red')
 addSMA(n=20,col='blue')
+addSMA(n=100,col='yellow')
+addSMA(n=200,col='gray')
+addSMA(n=500,col='white')
 
 # Strategy init
 trend1.strat <- "TrendStrat1"

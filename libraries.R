@@ -7,8 +7,10 @@
 #### Install and load required libraries ####
 
 .requiredLibraries <- c(
+  'prophet',
   'dplyr',
   'magrittr',
+  'foreach',
   'quantmod',
   'binhf',
   'h2o',
@@ -21,7 +23,9 @@
   'roll',
   'pracma',
   'blotter',
-  'quantstrat'
+  'quantstrat',
+  'RCurl',
+  'rjson'
 )
 
 ####################################################################

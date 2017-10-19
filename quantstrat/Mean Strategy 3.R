@@ -3,12 +3,23 @@ source('libraries.R')
 # Configure dates and size of portfolio
 initial.portfolio.date <- '2016-06-30'
 start.date             <- '2016-07-01'
-# initial.portfolio.date <- '2000-06-12'
-# start.date             <- '2000-06-13'
-end.date               <- '2017-07-24'
+# initial.portfolio.date <- '1980-04-12'
+# start.date             <- '1980-04-13'
+end.date               <- '2017-10-06'
 initial.equity         <- 10000
-order.qty              <- 700
-ticker                 <- 'LFC'
+order.qty              <- 300
+ticker                 <- 'MU'
+
+buy.threshold  <- -1.5
+sell.threshold <-  1.5
+
+# Good orders, need to be tweaked:
+# 350 OLN ~ 20%
+# 35 IBB ~ 20%
+# 1600 NOK ~ 38% but risky
+# 150 HES ~ 50% @ -1.2 -> 1.5, 65.5% win rate
+# 350 MU ~ 26.9%
+
 
 # Apparently timezone needs to be UTC
 Sys.setenv(TZ='UTC')
@@ -51,10 +62,15 @@ hurstexp(diffx)
 
 # Z-Score Function and Calculation
 zscore.fun <- function(x,n) {roll_scale(x, width=n)}
-zscore <- zscore.fun(diff(log(Cl(symbol)), lag=1), n=24)
-plot(zscore)
-abline(h=1.5, col=2)
-abline(h=-1.5, col=3)
+zscore <- zscore.fun(diff(log(symbol$Close), lag=1), n=24)
+
+quantiles <- (zscore %>% as.data.frame %>% filter(!is.na(zscore)))$Low %>% quantile
+# buy.threshold  <- quantiles[[2]]
+# sell.threshold <- quantiles[[4]] + quantiles[[3]]
+
+plot(zscore) %>% print
+abline(h=sell.threshold, col=2)
+abline(h=buy.threshold, col=3)
 
 # Strategy init
 mean3.strat <- "MeanStrat3"
@@ -62,11 +78,11 @@ rm.strat(mean3.strat)
 strategy(name=mean3.strat, store=T)
 
 # Add indicators
-mean3.strat %<>% add.indicator(name="zscore.fun", arguments=list(x=quote(diff(log(Cl(mktdata)), lag=1)), n=10), label='zscore')
+mean3.strat %<>% add.indicator(name="zscore.fun", arguments=list(x=quote(diff(log(Cl(mktdata)), lag=1)), n=24), label='zscore')
 
 # Add signals
-mean3.strat %<>% add.signal(name='sigThreshold', arguments=list(threshold=-1.5, column="zscore", relationship="lt"), label="BuySignal")
-mean3.strat %<>% add.signal(name='sigThreshold', arguments=list(threshold= 1.5, column="zscore", relationship="gt"), label="SellSignal")
+mean3.strat %<>% add.signal(name='sigThreshold', arguments=list(threshold=buy.threshold,  column="zscore", relationship="lt"), label="BuySignal")
+mean3.strat %<>% add.signal(name='sigThreshold', arguments=list(threshold=sell.threshold, column="zscore", relationship="gt"), label="SellSignal")
 
 # Add Enter rule (with stop loss)
 mean3.strat %<>% add.rule(name='ruleSignal', arguments=list(sigcol="BuySignal", sigval=T, orderqty=order.qty, ordertype='market', orderside='long'), type='enter', label='EnterRule', enabled=T)
@@ -103,6 +119,13 @@ mean3.stats <- t(tradeStats(Portfolios=mean3.portf))
 View(mean3.stats)
 mean3.perstats <- perTradeStats(Portfolio=mean3.portf)
 View(mean3.perstats)
+
+print(paste("Number of trades:", nrow(mean3.perstats)), quote=F)
+print(paste("Average holding days:", mean(mean3.perstats$duration / 86400) %>% as.numeric), quote=F)
+
+losses <- mean3.perstats %>% filter (Net.Trading.PL < 0) %>% nrow
+wins   <- mean3.perstats %>% filter (Net.Trading.PL > 0) %>% nrow
+print(paste("Win rate:", wins / (losses + wins) %>% as.numeric), quote=F)
 
 # Order book
 mean3.book <- getOrderBook(portfolio=mean3.portf)

@@ -5,7 +5,7 @@ initial.portfolio.date <- '2016-06-30'
 start.date             <- '2016-07-01'
 end.date               <- '2017-07-24'
 initial.equity         <- 10000
-order.qty              <- 100
+order.qty              <- 320
 ticker                 <- 'MU'
 
 # Apparently timezone needs to be UTC
@@ -74,7 +74,7 @@ updateEndEq(Account=mean1.strat)
 mean1.stats <- t(tradeStats(Portfolios=mean1.portf))
 View(mean1.stats)
 mean1.perstats <- perTradeStats(Portfolio=mean1.portf)
-# View(mean1.perstats)
+View(mean1.perstats)
 
 # Order book
 mean1.book <- getOrderBook(portfolio=mean1.portf)

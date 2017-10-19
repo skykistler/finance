@@ -1,8 +1,6 @@
 source('libraries.R')
 
-h2o.init(nthreads=4)
-
-pred.date <- '2017-08-03'
+pred.date <- '2016-10-18'
 
 getSymbols('MU', src='yahoo', from="2013-05-27", to=pred.date)
 
@@ -76,77 +74,16 @@ MU.daily %<>% filter(!is.na(evwma.50.lag.5))
 
 #####################################################
 
-training.subset <- 1:(nrow(MU.daily) - 20)
-
-MU.daily.train <- MU.daily[training.subset, ]
-MU.daily.test  <- MU.daily[-training.subset, ]
-
-#####################################################
-
-MU.daily.train.h2o <- as.h2o(MU.daily.train)
-MU.daily.test.h2o  <- as.h2o(MU.daily.test[,characteristics])
-
-MU.daily.dnn <-
-  h2o.deeplearning(
-    x=characteristics,
-    y='price',
-    training_frame = MU.daily.train.h2o,
-    model_id = 'MU.daily.dnn',
-    nfolds=7,
-    activation = "RectifierWithDropout",
-    hidden=c(200,200,200,200,200),
-    epochs=14,
-    seed=-1
+MU.prophet.df <- MU.daily[,characteristics]
+MU.prophet.df %<>%
+  mutate(
+    y = MU.daily$price,
+    ds = MU.daily$date
   )
 
-MU.daily.test$prediction <- h2o.predict(
-  h2o.getModel('MU.daily.dnn'),
-  MU.daily.test.h2o
-) %>% as.vector('numeric')
+MU.prophet <- prophet(MU.prophet.df, daily.seasonality=TRUE, yearly.seasonality=TRUE)
 
+future <- make_future_dataframe(MU.prophet, periods = 365)
 
-
-##################################################################### 
-
-
-plotPredictions <- function() {
-  offset <- 1#MU.daily.test[1,]$price / MU.daily.test[1,]$prediction
-  
-  ggplot(MU.daily.test, aes(x=MU.daily.test$date)) +                    
-    geom_line(aes(y=MU.daily.test$prediction * offset), colour="red", size=1) +  
-    geom_line(aes(y=MU.daily.test$price), colour="green", size=1) +
-    scale_x_date(
-      minor_breaks = seq(
-        from = min(MU.daily.test$date), 
-        to   = max(MU.daily.test$date),
-        by   = "1 day"
-      ),
-      date_breaks = "5 days"
-    ) +
-    scale_y_sqrt() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-  
-  ggplotly()
-}
-
-plotPredictions()
-  
-printPerformance <- function () {
-  print(paste('True downs (both went down):', MU.daily.test %>% filter(prediction < lag(prediction), price < price.lag) %>% nrow)) 
-  print(paste('True ups (both went up):', MU.daily.test %>% filter(prediction > lag(prediction), price > price.lag) %>% nrow)) 
-  
-  print(paste('False downs (actually went up):', MU.daily.test %>% filter(prediction < lag(prediction), price > price.lag) %>% nrow)) 
-  print(paste('False ups (actually went down):', MU.daily.test %>% filter(prediction > lag(prediction), price < price.lag) %>% nrow)) 
-  
-  MU.daily.test %>% mutate(prediction.lag = lag(prediction)) %>% select(date, prediction.lag, prediction, price.lag, price) %>% View
-}
-  
-printPerformance()
-  
-
-
-
-
-
-
-
+forecast <- predict(MU.prophet, future)
+plot(MU.prophet, forecast) %>% print
