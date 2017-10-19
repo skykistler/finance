@@ -1,11 +1,12 @@
 source('libraries.R')
 
-predictProphet <- function(symbol, from.date='2014-01-01', pred.date=Sys.Date()) {
+#### Predict and plot predictions for a given symbol ####
+predictProphet <- function(symbol, from.date='2014-01-01', to.date=Sys.Date(), future.days=365) {
   
-  symbol.data <- getSymbols(symbol, src='yahoo', from=from.date, to=pred.date, auto.assign=F)
+  #### Pull ticker data from yahoo ####
+  symbol.data <- getSymbols(symbol, src='yahoo', from=from.date, to=to.date, auto.assign=F)
   
-  #####################################################
-  
+  #### Normalize ticker data for data frame ####
   price  <- symbol.data[,paste0(symbol,'.Adjusted')]
   volume <- symbol.data[,paste0(symbol,'.Volume')]
   
@@ -14,10 +15,7 @@ predictProphet <- function(symbol, from.date='2014-01-01', pred.date=Sys.Date())
   
   symbol.daily$date %<>% as.Date()
   
-  symbol.daily %<>% rbind(
-    data.frame(price=NA, volume=NA, date=pred.date)
-  )
-  
+  #### Engineer features ####
   symbol.daily %<>%
     mutate(
       # This is not trained on, see line 'characteristics <- ...'
@@ -78,9 +76,8 @@ predictProphet <- function(symbol, from.date='2014-01-01', pred.date=Sys.Date())
   
   characteristics <- colnames(symbol.daily)[-(4:1)]
   
+  #### Prepare data for prophet ####
   symbol.daily %<>% filter(!is.na(evwma.medium.lag.5))
-  
-  #####################################################
   
   symbol.prophet.df <- symbol.daily[,characteristics]
   symbol.prophet.df %<>%
@@ -89,10 +86,11 @@ predictProphet <- function(symbol, from.date='2014-01-01', pred.date=Sys.Date())
       ds = symbol.daily$date
     )
   
+  #### Run prophet ####
   symbol.prophet <- prophet(symbol.prophet.df, daily.seasonality=TRUE, yearly.seasonality=TRUE)
   
-  future <- make_future_dataframe(symbol.prophet, periods = 365)
-  
+  #### Make and plot predictions ####
+  future <- make_future_dataframe(symbol.prophet, periods = future.days)
   forecast <- predict(symbol.prophet, future)
   plot(symbol.prophet, forecast) %>% print
 }
