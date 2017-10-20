@@ -19,7 +19,7 @@ predictProphet <- function(symbol, from.date='2014-01-01', to.date=Sys.Date(), f
   symbol.daily %<>%
     mutate(
       # This is not trained on, see line 'characteristics <- ...'
-      percent.change = price / (lag(price) - 1) - 1,
+      percent.change = (price / lag(price)) - 1,
       
       # Quick descriptions of price
       price.lag      = lag(price),
