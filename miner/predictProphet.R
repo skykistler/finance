@@ -1,7 +1,7 @@
 source('libraries.R')
 
 #### Predict and plot predictions for a given symbol ####
-predictProphet <- function(symbol, from.date='2014-01-01', to.date=Sys.Date(), future.days=365) {
+predictProphet <- function(symbol, from.date='2014-01-01', to.date=Sys.Date(), future.days=365, png.filename=NULL) {
   
   #### Pull ticker data from yahoo ####
   symbol.data <- getSymbols(symbol, src='yahoo', from=from.date, to=to.date, auto.assign=F)
@@ -12,6 +12,15 @@ predictProphet <- function(symbol, from.date='2014-01-01', to.date=Sys.Date(), f
   
   symbol.daily <- data.frame(price, volume, symbol.data %>% as.data.frame() %>% rownames)
   colnames(symbol.daily) <- c('price', 'volume', 'date')
+  
+  
+  # symbol.daily %<>% rbind(
+  #   data.frame(
+  #     price=244,
+  #     volume=4000000,
+  #     date='2017-10-27'
+  #   )
+  # )
   
   symbol.daily$date %<>% as.Date()
   
@@ -86,14 +95,21 @@ predictProphet <- function(symbol, from.date='2014-01-01', to.date=Sys.Date(), f
       ds = symbol.daily$date
     )
   
-  #### Run prophet ####
+  #### Run prophet ####p
   symbol.prophet <- prophet(symbol.prophet.df, daily.seasonality=TRUE, yearly.seasonality=TRUE)
   
   #### Make and plot predictions ####
   future <- make_future_dataframe(symbol.prophet, periods = future.days)
   forecast <- predict(symbol.prophet, future)
   
+  if (!is.null(png.filename))
+    png(filename=png.filename, width=1920, height=1080)
+  
   plot(symbol.prophet, forecast) %>% print
+  
+  if (!is.null(png.filename))
+    dev.off()
+  
   forecast %>% 
     select(
       date = ds,
