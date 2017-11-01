@@ -13,15 +13,6 @@ predictProphet <- function(symbol, from.date='2014-01-01', to.date=Sys.Date(), f
   symbol.daily <- data.frame(price, volume, symbol.data %>% as.data.frame() %>% rownames)
   colnames(symbol.daily) <- c('price', 'volume', 'date')
   
-  
-  # symbol.daily %<>% rbind(
-  #   data.frame(
-  #     price=244,
-  #     volume=4000000,
-  #     date='2017-10-27'
-  #   )
-  # )
-  
   symbol.daily$date %<>% as.Date()
   
   #### Engineer features ####
